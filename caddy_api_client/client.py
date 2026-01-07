@@ -638,10 +638,11 @@ class CaddyAPIClient:
         }
 
     def _get_reverse_proxy_handler(self, target: str, target_port: int) -> Dict:
-        """Get reverse proxy handler with X-Real-Ip header.
+        """Get reverse proxy handler with client IP headers.
 
-        This ensures the real client IP is forwarded to upstream services,
-        not the IP of intermediate proxies.
+        Sets X-Real-Ip and X-Forwarded-For to the real client IP,
+        ensuring upstream services receive the actual client IP
+        and preventing internal network topology exposure.
 
         Args:
             target (str): Target host (IP or FQDN)
@@ -655,7 +656,8 @@ class CaddyAPIClient:
             "headers": {
                 "request": {
                     "set": {
-                        "X-Real-Ip": ["{http.request.remote.host}"]
+                        "X-Real-Ip": ["{http.request.remote.host}"],
+                        "X-Forwarded-For": ["{http.request.remote.host}"]
                     }
                 }
             },
