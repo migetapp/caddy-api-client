@@ -7,7 +7,7 @@ with open(os.path.join(os.path.dirname(__file__), 'README.md'), encoding='utf-8'
 
 setup(
     name="caddy-api-client",
-    version="0.2.4",
+    version="0.2.5",
     packages=find_packages(),
     install_requires=[
         "requests>=2.31.0",
