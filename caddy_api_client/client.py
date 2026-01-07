@@ -171,12 +171,7 @@ class CaddyAPIClient:
                 })
 
             # Add reverse proxy handler
-            handlers.append({
-                "handler": "reverse_proxy",
-                "upstreams": [{
-                    "dial": f"{target}:{target_port}"
-                }]
-            })
+            handlers.append(self._get_reverse_proxy_handler(target, target_port))
 
             # Create routes configuration
             routes = []
@@ -381,12 +376,7 @@ class CaddyAPIClient:
                 "handle": [{
                     "handler": "subroute",
                     "routes": [{
-                        "handle": [{
-                            "handler": "reverse_proxy",
-                            "upstreams": [{
-                                "dial": f"{target}:{target_port}"
-                            }]
-                        }]
+                        "handle": [self._get_reverse_proxy_handler(target, target_port)]
                     }]
                 }]
             }
@@ -647,6 +637,33 @@ class CaddyAPIClient:
             "certificate_selection": {"all_tags": [cert_tag]}
         }
 
+    def _get_reverse_proxy_handler(self, target: str, target_port: int) -> Dict:
+        """Get reverse proxy handler with X-Real-Ip header.
+
+        This ensures the real client IP is forwarded to upstream services,
+        not the IP of intermediate proxies.
+
+        Args:
+            target (str): Target host (IP or FQDN)
+            target_port (int): Target port
+
+        Returns:
+            Dict: Reverse proxy handler configuration
+        """
+        return {
+            "handler": "reverse_proxy",
+            "headers": {
+                "request": {
+                    "set": {
+                        "X-Real-Ip": ["{http.request.remote.host}"]
+                    }
+                }
+            },
+            "upstreams": [{
+                "dial": f"{target}:{target_port}"
+            }]
+        }
+
     def _get_security_headers(self, enable_hsts: bool = True, frame_options: str = "DENY") -> dict:
         """Generate security headers configuration.
 
@@ -788,12 +805,7 @@ class CaddyAPIClient:
                         new_handlers.append(handler)
 
                 # Add reverse proxy handler
-                new_handlers.append({
-                    "handler": "reverse_proxy",
-                    "upstreams": [{
-                        "dial": f"{target}:{target_port}"
-                    }]
-                })
+                new_handlers.append(self._get_reverse_proxy_handler(target, target_port))
 
                 # Update domain route with new handlers
                 domain_route['handle'] = new_handlers
